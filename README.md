@@ -11,17 +11,21 @@ Browser (quiz)
                        └─ Power BI report (scheduled refresh)
 ```
 
-## Privacy by design (please read first)
+## Privacy & PDPA compliance (please read first)
 
-The quiz tells participants their answers are theirs. The pipeline honours that:
+The site now collects some personal data (name — optional, age, contact — optional, dimension scores, and an interest flag), so the Personal Data Protection Act 2012 applies in full. What the build already does for you:
 
-- Only **four dimension totals, an optional age band, a random response ID, and a timestamp** are ever transmitted.
-- Per-question answers, scenario picks, and all Part 3 reflections **never leave the device**.
-- Submission is **opt-in** via a consent checkbox and is clearly voluntary.
-- The Netlify function whitelists and validates fields, so nothing extra can be smuggled into your Excel file.
-- Never use the collected scores to rank, select, or evaluate individual supporters — the tool is a reflection aid, not a validated psychometric instrument. With a random response ID and no names, individuals can't be identified anyway; keep it that way.
+- **Notification & consent (s13–14, s20):** a data protection notice is shown at the point of collection (expandable "Data protection notice" panel) stating what is collected, the purposes, retention, and how to withdraw consent. Submission requires an explicit consent checkbox and is opt-in — completing the quiz never requires sharing.
+- **Purpose limitation:** only two stated purposes — programme evaluation (aggregate) and, where the participant opted in, follow-up with self-support resources. Don't reuse the data beyond these without fresh consent.
+- **Data minimisation:** per-question answers, scenario picks, and Part 3 reflections never leave the device. Contact details are only transmitted when the participant ticked the interest box.
+- **Minors:** PDPC guidance treats individuals from around 13 as generally able to consent for themselves; the notice still encourages under-18s to go through it with a facilitator, parent, or guardian.
+- **Server-side whitelisting:** the Netlify function validates and strips everything except the declared fields.
 
-Participants include minors (13–17). Under Singapore's PDPA, keeping the data anonymous is your strongest position — resist any future temptation to add name/email fields.
+Things YOU must do before going live:
+1. Replace `dpo@example.org` in `index.html` with your organisation's real DPO / programme contact (a DPO contact is mandatory under PDPA s11(5)).
+2. Set (and honour) the retention period — the notice promises deletion within 2 years; adjust the wording if your policy differs, and actually schedule the deletion.
+3. Restrict the Excel file and Power BI workspace to the programme team only, and act on withdrawal/access/correction requests.
+4. Keep the facilitator rule from the original tool: never use scores to rank, select, or evaluate individual supporters.
 
 ---
 
@@ -51,7 +55,10 @@ Prerequisite: create an Excel file first (see Part C, step 1) so the flow has so
      {
        "responseId": "abc-123",
        "submittedAt": "2026-07-30T08:00:00Z",
-       "ageBand": "16–18",
+       "name": "Alex Tan",
+       "age": 17,
+       "interestedInSupport": true,
+       "contact": "alex@example.com",
        "scoreA": 15,
        "scoreB": 18,
        "scoreC": 20,
@@ -74,14 +81,15 @@ Prerequisite: create an Excel file first (see Part C, step 1) so the flow has so
 1. In SharePoint (a Team site the programme team controls) or OneDrive, create `HoldingSpace-Responses.xlsx`.
 2. In row 1 add headers, select them, then **Insert → Table** (✓ "My table has headers") and name the table `QuizResponses`:
 
-   | responseId | submittedAt | ageBand | scoreA | scoreB | scoreC | scoreD | lowestDimension |
-   |---|---|---|---|---|---|---|---|
+   | responseId | submittedAt | name | age | interestedInSupport | contact | scoreA | scoreB | scoreC | scoreD | lowestDimension |
+   |---|---|---|---|---|---|---|---|---|---|---|
 
 3. **Power BI Desktop** → Get Data → **Web** → paste the SharePoint file path (or Get Data → SharePoint folder), load the `QuizResponses` table.
 4. Useful starter visuals (all aggregate — never per-person):
    - Average score per dimension (clustered bar), normalised to % of max since B/C max at 25 and A/D at 20.
    - Distribution of "lowest dimension" (which growth edge is most common → informs training focus).
-   - Responses over time / by age band.
+   - Responses over time / by age.
+   - Count of "interested in self-support" opt-ins (and a table of their contacts, restricted to the follow-up owner).
 5. Publish to the Power BI Service and set **scheduled refresh** (the SharePoint connection refreshes without a gateway).
 
 Security notes:

@@ -33,7 +33,6 @@ export default async (req) => {
 
   // ---- Validate & whitelist: only these fields ever leave the function ----
   const inRange = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
-  const AGE_BANDS = ["13–15", "16–18", "19–21", "22–25", "Not stated"];
 
   if (
     !inRange(body.scoreA, 4, 20) ||
@@ -41,7 +40,8 @@ export default async (req) => {
     !inRange(body.scoreC, 5, 25) ||
     !inRange(body.scoreD, 4, 20) ||
     !["A", "B", "C", "D"].includes(body.lowestDimension) ||
-    !AGE_BANDS.includes(body.ageBand)
+    !inRange(body.age, 13, 25) ||
+    typeof body.interestedInSupport !== "boolean"
   ) {
     return new Response(JSON.stringify({ error: "Invalid payload" }), {
       status: 400,
@@ -52,7 +52,12 @@ export default async (req) => {
   const clean = {
     responseId: String(body.responseId || "").slice(0, 64),
     submittedAt: new Date().toISOString(), // server-side timestamp
-    ageBand: body.ageBand,
+    name: String(body.name || "").slice(0, 100),           // optional (PDPA notice shown at collection)
+    age: body.age,
+    interestedInSupport: body.interestedInSupport,
+    contact: body.interestedInSupport
+      ? String(body.contact || "").slice(0, 120)
+      : "",                                                // contact only kept when follow-up was requested
     scoreA: body.scoreA,
     scoreB: body.scoreB,
     scoreC: body.scoreC,

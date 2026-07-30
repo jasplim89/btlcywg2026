@@ -179,12 +179,25 @@ textarea:focus{outline:3px solid var(--sun);outline-offset:2px;border-color:var(
   background:#fff;border:2px solid var(--aqua);border-radius:var(--radius);
   box-shadow:var(--shadow);padding:26px 28px;margin-top:8px;
 }
-.share-card label{display:flex;gap:12px;align-items:flex-start;font-size:.95rem;margin:14px 0 18px}
+.share-card .check-row{display:flex;gap:12px;align-items:flex-start;font-size:.95rem;margin:14px 0}
 .share-card input[type=checkbox]{width:20px;height:20px;accent-color:var(--teal);flex:none;margin-top:2px}
-select{
-  font:inherit;font-weight:700;color:var(--ink);border:2px solid var(--aqua);
-  border-radius:12px;padding:10px 14px;background:#fff;
+.form-grid{display:grid;grid-template-columns:1.6fr .6fr;gap:14px;margin:18px 0 4px}
+@media (max-width:560px){.form-grid{grid-template-columns:1fr}}
+.fld-label{display:block;font-weight:800;font-size:.88rem;margin-bottom:6px}
+.opt-tag{font-weight:700;font-size:.75rem;color:var(--teal-deep);background:var(--aqua);
+  padding:2px 9px;border-radius:999px;vertical-align:middle}
+.share-card input[type=text],.share-card input[type=number]{
+  width:100%;font:inherit;color:var(--ink);border:2px solid var(--aqua);
+  border-radius:12px;padding:11px 14px;background:#fff;
 }
+.share-card input[type=text]:focus,.share-card input[type=number]:focus{
+  outline:3px solid var(--sun);outline-offset:2px;border-color:var(--teal)}
+.pdpa{margin:4px 0 18px;border:2px solid var(--aqua);border-radius:14px;background:var(--paper)}
+.pdpa summary{cursor:pointer;font-weight:800;font-size:.9rem;padding:12px 16px;color:var(--teal-deep)}
+.pdpa summary:focus-visible{outline:3px solid var(--sun);outline-offset:2px;border-radius:14px}
+.pdpa-body{padding:0 16px 14px;font-size:.87rem}
+.pdpa-body p{margin-bottom:10px}
+.pdpa-body a{color:var(--teal-deep);font-weight:700}
 .status{margin-top:14px;font-weight:700}
 .status.ok{color:var(--teal-deep)}
 .status.err{color:#C0392B}
@@ -345,23 +358,46 @@ footer{background:var(--ink);color:var(--aqua);text-align:center;padding:26px 22
       </div>
 
       <div class="share-card">
-        <h3 style="font-size:1.15rem">Help us make peer support training better?</h3>
-        <p style="font-size:.95rem;margin-top:6px">You can share your four dimension scores <strong>anonymously</strong> with the programme team. We never collect your name, your answers to individual questions, or anything you wrote in Part 3.</p>
-        <div style="margin-top:14px">
-          <label for="ageBand" style="font-weight:700;font-size:.9rem;display:block;margin-bottom:6px">Age group (optional)</label>
-          <select id="ageBand">
-            <option value="">Prefer not to say</option>
-            <option>13–15</option>
-            <option>16–18</option>
-            <option>19–21</option>
-            <option>22–25</option>
-          </select>
+        <h3 style="font-size:1.15rem">Share your results with the programme team?</h3>
+        <p style="font-size:.95rem;margin-top:6px">This is <strong>completely voluntary</strong> and doesn't affect anything about your role. Your Part 3 reflections and individual answers are never collected — only your four dimension scores and what you fill in below.</p>
+
+        <div class="form-grid">
+          <div>
+            <label for="userName" class="fld-label">Name <span class="opt-tag">optional</span></label>
+            <input type="text" id="userName" maxlength="100" placeholder="You can leave this blank to stay anonymous" autocomplete="off">
+          </div>
+          <div>
+            <label for="userAge" class="fld-label">Age</label>
+            <input type="number" id="userAge" min="13" max="25" inputmode="numeric" placeholder="13–25">
+          </div>
         </div>
-        <label>
-          <input type="checkbox" id="consent">
-          <span>I'm okay with my anonymous dimension scores being used to improve the programme. I understand this is voluntary and doesn't affect anything about my role.</span>
+
+        <label class="check-row">
+          <input type="checkbox" id="interest" onchange="toggleContact()">
+          <span><strong>I'm interested to find out more about how I can support myself better in my journey of supporting others.</strong></span>
         </label>
-        <button class="btn" id="shareBtn" onclick="submitScores()">Share anonymously</button>
+        <div id="contactWrap" hidden style="margin:0 0 6px 32px">
+          <label for="userContact" class="fld-label">How can the team reach you? <span class="opt-tag">optional</span></label>
+          <input type="text" id="userContact" maxlength="120" placeholder="Email or phone — or leave blank and approach your facilitator instead">
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="consent">
+          <span>I consent to Beyond the Label collecting and using the personal data I've provided above, for the purposes set out in the data protection notice below.</span>
+        </label>
+
+        <details class="pdpa">
+          <summary>📄 Data protection notice (Personal Data Protection Act 2012)</summary>
+          <div class="pdpa-body">
+            <p><strong>What we collect:</strong> your dimension scores (A–D), age, and — only if you choose to provide them — your name, contact details, and your interest in learning about self-support resources. We also record the date and time of submission. We do <em>not</em> collect your answers to individual questions or anything you wrote in Part 3.</p>
+            <p><strong>Purposes:</strong> (1) to evaluate and improve the peer support programme, using scores in aggregated form; and (2) if you indicated interest, to contact you with information and resources on supporting your own wellbeing.</p>
+            <p><strong>Storage &amp; access:</strong> your data is stored securely within our organisation's Microsoft 365 environment and is accessible only to the programme team. It will not be sold, and will not be disclosed to third parties except as required by law. It will be retained only for as long as needed for the above purposes, and no longer than 2 years, after which it is deleted.</p>
+            <p><strong>Your rights:</strong> providing personal data is voluntary. You may withdraw your consent, or request access to or correction of your data, at any time by contacting our Data Protection Officer at <a href="mailto:dpo@example.org">dpo@example.org</a>. Withdrawing consent will not affect your participation in the programme in any way.</p>
+            <p><strong>If you are under 18:</strong> please make sure you understand this notice before consenting — feel free to ask a facilitator, parent, or guardian to go through it with you first.</p>
+          </div>
+        </details>
+
+        <button class="btn" id="shareBtn" onclick="submitScores()">Share my results</button>
         <button class="ghost" onclick="retake()" style="margin-left:8px">Retake the quiz</button>
         <p class="status" id="shareStatus" role="status"></p>
       </div>
@@ -546,18 +582,30 @@ function showResults(){
 function retake(){
   answers = new Array(ITEMS.length).fill(null);
   scenarioPicks = [null,null];
-  ['p3a','p3b','p3c'].forEach(id=>document.getElementById(id).value='');
+  ['p3a','p3b','p3c','userName','userAge','userContact'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('shareStatus').textContent='';
   document.getElementById('consent').checked=false;
+  document.getElementById('interest').checked=false;
+  toggleContact();
   show('landing');
 }
 
-/* ================= ANONYMOUS SUBMISSION ================= */
+function toggleContact(){
+  document.getElementById('contactWrap').hidden = !document.getElementById('interest').checked;
+}
+
+/* ================= SUBMISSION (opt-in, PDPA notice above) ================= */
 async function submitScores(){
   const status = document.getElementById('shareStatus');
+  status.className = 'status err';
+
+  const age = parseInt(document.getElementById('userAge').value, 10);
+  if(!(age >= 13 && age <= 25)){
+    status.textContent = 'Please enter your age (13–25) before sharing.';
+    return;
+  }
   if(!document.getElementById('consent').checked){
-    status.textContent = 'Please tick the consent box first — sharing is completely optional.';
-    status.className = 'status err';
+    status.textContent = 'Please read the data protection notice and tick the consent box first — sharing is completely optional.';
     return;
   }
   const scores = computeScores();
@@ -567,10 +615,14 @@ async function submitScores(){
   const payload = {
     responseId: sessionId,
     submittedAt: new Date().toISOString(),
-    ageBand: document.getElementById('ageBand').value || 'Not stated',
+    name: document.getElementById('userName').value.trim(),          // optional
+    age: age,
+    interestedInSupport: document.getElementById('interest').checked,
+    contact: document.getElementById('interest').checked
+      ? document.getElementById('userContact').value.trim() : '',    // optional
     scoreA: scores.A, scoreB: scores.B, scoreC: scores.C, scoreD: scores.D,
     lowestDimension: lowest
-    // Deliberately NOT sent: names, emails, per-question answers, Part 3 reflections.
+    // Deliberately NOT sent: per-question answers, scenario picks, Part 3 reflections.
   };
 
   const btn = document.getElementById('shareBtn');
@@ -583,13 +635,15 @@ async function submitScores(){
       body: JSON.stringify(payload)
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
-    status.textContent = '💙 Thank you! Your anonymous scores were shared with the programme team.';
+    status.textContent = payload.interestedInSupport
+      ? '💙 Thank you! Your results were shared, and the team will follow up with self-support resources.'
+      : '💙 Thank you! Your results were shared with the programme team.';
     status.className = 'status ok';
     btn.textContent = 'Shared ✓';
   }catch(e){
     status.textContent = 'Hmm, that didn\u2019t go through. Your results are still yours — you can try again, or just skip this.';
     status.className = 'status err';
-    btn.disabled = false; btn.textContent = 'Share anonymously';
+    btn.disabled = false; btn.textContent = 'Share my results';
   }
 }
 </script>
