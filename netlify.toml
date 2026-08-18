@@ -1,0 +1,14 @@
+[build]
+  publish = "."
+
+[functions]
+  directory = "."
+
+# Basic hardening headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
