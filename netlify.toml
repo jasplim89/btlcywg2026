@@ -2,7 +2,7 @@
   publish = "."
 
 [functions]
-  directory = "."
+  directory = "netlify/functions"
 
 # Basic hardening headers
 [[headers]]
