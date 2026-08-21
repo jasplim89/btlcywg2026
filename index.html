@@ -653,7 +653,7 @@ let picks    = new Array(SCENARIOS.length).fill(null);  // chosen option key per
 let qi       = 0;                                       // scenario index
 let exIdx    = 0;                                       // exit question index
 let exitData = {};                                      // exit survey answers
-const sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
+let sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
 
 /* ================= NAV ================= */
 function show(id){
@@ -877,6 +877,7 @@ function retake(){
   picks    = new Array(SCENARIOS.length).fill(null);
   exitData = {};
   qi = 0; exIdx = 0;
+  sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
   ['p2reflectInput','userName','userAge','userContact'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.value='';
   });
@@ -884,6 +885,9 @@ function retake(){
   document.getElementById('consent').checked=false;
   document.getElementById('interest').checked=false;
   document.getElementById('shareCard').hidden = true;
+  const btn = document.getElementById('shareBtn');
+  btn.disabled = false;
+  btn.textContent = 'Share my results';
   toggleContact();
   show('landing');
 }
