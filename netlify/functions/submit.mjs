@@ -7,16 +7,17 @@
 // Netlify env var to set (Site settings -> Environment variables):
 //   POWER_AUTOMATE_URL = the "HTTP POST URL" from your Power Automate trigger
 //
-// Score ranges follow the 14-question build: 10 scenarios, each option worth 1-4.
+// Score ranges follow the 12-question build: 8 scenarios (2 per dimension, uniform
+// weighting per decision D5), each option worth 1-4.
 //   Welcoming  (A) 2 scenarios ->  2-8
-//   Accepting  (B) 3 scenarios ->  3-12
-//   Empowering (C) 3 scenarios ->  3-12
+//   Accepting  (B) 2 scenarios ->  2-8
+//   Empowering (C) 2 scenarios ->  2-8
 //   Openness   (D) 2 scenarios ->  2-8
-// Because the maxima differ, we also send a normalised percentage per dimension
-// so charts can compare them directly.
+// Because every dimension now shares the same range, the percentage columns are
+// mostly for convenience/consistency rather than to correct for differing maxima.
 
-const DIM_MAX = { A: 8, B: 12, C: 12, D: 8 };
-const DIM_MIN = { A: 2, B: 3, C: 3, D: 2 };
+const DIM_MAX = { A: 8, B: 8, C: 8, D: 8 };
+const DIM_MIN = { A: 2, B: 2, C: 2, D: 2 };
 
 const SUPPORTER_STYLES = [
   "The Open Door",
