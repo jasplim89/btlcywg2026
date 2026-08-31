@@ -65,7 +65,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 .btn:focus-visible,.chip:focus-visible,.opt:focus-visible,.ghost:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .btn.sun{background:var(--sun);color:var(--ink);box-shadow:0 6px 0 rgba(6,62,69,.18)}
 .btn.is-loading{opacity:.75;pointer-events:none}
-.btn[disabled]{cursor:default}
+.btn[disabled]{cursor:default;opacity:.45;filter:grayscale(.3);pointer-events:none}
 .btn.light{background:#fff;color:var(--teal-deep)}
 .ghost{background:none;color:inherit;font-weight:700;opacity:.75;padding:10px 14px;border-radius:12px}
 .ghost:hover{opacity:1;background:rgba(6,62,69,.06)}
@@ -414,6 +414,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
           <button class="ghost" id="exBack" onclick="exBack()">&larr; Back</button>
           <button class="btn" id="exNext" onclick="exNext()">Next &rarr;</button>
         </div>
+        <p class="sc-lead" id="exHint" style="margin-top:8px;color:var(--muted,#8a8f98)" hidden>Please answer every row before continuing.</p>
       </div>
     </div>
   </div>
@@ -829,6 +830,7 @@ function renderExit(){
           exitData[q.id][row.k] = ci+1;
           opts.querySelectorAll('.grid-chip').forEach(x=>x.classList.remove('picked'));
           b.classList.add('picked');
+          updateExitNextState();
         };
         opts.appendChild(b);
       });
@@ -853,13 +855,30 @@ function renderExit(){
         at === -1 ? arr.push(o) : arr.splice(at,1);
         b.classList.toggle('picked', at === -1);
         b.setAttribute('aria-pressed', at === -1);
+        updateExitNextState();
       };
       wrap.appendChild(b);
     });
     body.appendChild(wrap);
   }
+
+  updateExitNextState();
+}
+/* True once every row/option required by the current exit question has an answer. */
+function exitQuestionComplete(){
+  const q = EXIT[exIdx];
+  const data = exitData[q.id];
+  if(q.type === 'grid') return q.rows.every(row => !!data[row.k]);
+  if(q.type === 'multi') return data.length > 0;
+  return true;
+}
+function updateExitNextState(){
+  const complete = exitQuestionComplete();
+  document.getElementById('exNext').disabled = !complete;
+  document.getElementById('exHint').hidden = complete;
 }
 function exNext(){
+  if(!exitQuestionComplete()) return; // belt-and-braces: button is disabled, but guard anyway
   if(exIdx < EXIT.length-1){ exIdx++; renderExit(); }
   else {
     document.getElementById('shareCard').hidden = false;
@@ -868,6 +887,7 @@ function exNext(){
   }
 }
 function exBack(){ exIdx > 0 ? (exIdx--, renderExit()) : show('results'); }
+
 
 function retake(){
   picks    = new Array(SCENARIOS.length).fill(null);
