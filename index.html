@@ -315,7 +315,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
         <h1>How do <em>you</em> hold space?</h1>
         <p class="lede">This quiz is a way for you to notice how you show up for your friends, celebrate what you already do well, and pick one thing to grow.</p>
         <div class="hero-facts">
-          <span class="fact">🕒 ~10 minutes</span>
+          <span class="fact">🕒 ~6-7 minutes</span>
           <span class="fact">🎂 Ages 13–25</span>
         </div>
         <button class="btn sun" id="startBtn" onclick="startQuiz()">See how you show up →</button>
@@ -373,8 +373,8 @@ textarea:focus{outline:none;border-color:var(--teal)}
   <div class="topbar">
     <div class="wrap">
       <img src="logo.png" alt="Beyond the Label">
-      <div class="progress" aria-hidden="true"><div style="width:85%"></div></div>
-      <span class="step-label">11 / 14</span>
+      <div class="progress" aria-hidden="true"><div id="p2bar"></div></div>
+      <span class="step-label" id="p2count"></span>
     </div>
   </div>
   <div class="q-stage">
@@ -399,8 +399,8 @@ textarea:focus{outline:none;border-color:var(--teal)}
   <div class="topbar">
     <div class="wrap">
       <img src="logo.png" alt="Beyond the Label">
-      <div class="progress" aria-hidden="true"><div id="exBar" style="width:90%"></div></div>
-      <span class="step-label" id="exCount">12 / 14</span>
+      <div class="progress" aria-hidden="true"><div id="exBar"></div></div>
+      <span class="step-label" id="exCount"></span>
     </div>
   </div>
   <div class="q-stage">
@@ -517,9 +517,11 @@ const DIMS = {
      practice:'End one conversation this week with: \u201cWas that actually helpful, or did I miss the mark?\u201d'}
 };
 
-/* 10 scenarios. Self-assessment is folded in: each option carries a score (1\u20134),
+/* 8 scenarios, 2 per dimension (uniform weighting \u2014 decision D5 superseded D4's
+   3rd Openness scenario once the whole set was rebalanced to 2 each).
+   Self-assessment is folded in: each option carries a score (1\u20134),
    so we still get a per-dimension picture without a separate Likert block.
-   All stems are anchored in a life transition (sign-off decision D4). */
+   All stems are anchored in a life transition. */
 const SCENARIOS = [
  {d:'A',
   text:"You\u2019re a few weeks into a new course. Someone you barely know keeps lingering near you at break but never quite says anything.",
@@ -549,15 +551,6 @@ const SCENARIOS = [
   reflect:"Tears aren\u2019t an emergency to be solved. (c) sounds kind but quietly asks them to stop feeling it. (a) stays with them and hands control back."},
 
  {d:'B',
-  text:"A friend says: \u201cI don\u2019t even know why I feel like this. It\u2019s stupid.\u201d",
-  opts:[
-   {k:'a',t:"\u201cIt\u2019s not stupid. Want to talk it out loud and see where it goes?\u201d", s:4},
-   {k:'b',t:"\u201cYeah, I get that.\u201d \u2014 then wait.", s:3},
-   {k:'c',t:"\u201cThere must be a reason. What actually happened?\u201d", s:2},
-   {k:'d',t:"\u201cYou\u2019re overthinking it.\u201d", s:1}],
-  reflect:"\u201cI don\u2019t know\u201d is a valid place to start, not a problem to fix. (c) is well-meant but demands a tidy explanation they don\u2019t have yet."},
-
- {d:'B',
   text:"Your friend admits they\u2019ve been skipping classes for weeks and are now badly behind.",
   opts:[
    {k:'a',t:"\u201cThat sounds like it\u2019s been building a while \u2014 what\u2019s been going on?\u201d", s:4},
@@ -583,15 +576,6 @@ const SCENARIOS = [
    {k:'c',t:"Keep going \u2014 sharing your story helps them feel less alone.", s:2},
    {k:'d',t:"Feel embarrassed and wind the conversation down.", s:1}],
   reflect:"Shared experience does build trust \u2014 right up to the point where the spotlight moves. Noticing and handing it back is the skill."},
-
- {d:'C',
-  text:"A friend told you something vulnerable last week. Another friend starts asking about it.",
-  opts:[
-   {k:'a',t:"\u201cThat\u2019s not really mine to share.\u201d", s:4},
-   {k:'b',t:"Deflect and change the subject.", s:3},
-   {k:'c',t:"Give a vague version that hints at it.", s:2},
-   {k:'d',t:"Share it without naming them \u2014 it\u2019s a good story.", s:1}],
-  reflect:"Anonymising doesn\u2019t make it yours to tell. (a) is slightly awkward for you and completely safe for them \u2014 that trade is the job."},
 
  {d:'D',
   text:"You\u2019re helping a friend think through a course change and they cut in: \u201cYou\u2019re not getting it \u2014 that\u2019s not what I meant at all.\u201d",
@@ -647,6 +631,12 @@ const EXIT = [
    'Sessions on friendships and relationships',
    'Small group programmes']}
 ];
+
+/* Total step count for progress labels: scenarios + 1 (Part 2 reflection) + exit questions.
+   Computed, not hardcoded, so it stays correct if scenarios or exit questions are ever
+   added/removed again (this is what D4/D5 change if you revisit quiz length). */
+const TOTAL_STEPS = SCENARIOS.length + 1 + EXIT.length;
+const PART2_STEP  = SCENARIOS.length + 1;
 
 /* ================= STATE ================= */
 let picks    = new Array(SCENARIOS.length).fill(null);  // chosen option key per scenario
@@ -737,7 +727,12 @@ function hideReflect(){
   document.getElementById('p1reflect').hidden = true;
   document.getElementById('p1next').hidden = true;
 }
-function p1Next(){ qi < SCENARIOS.length-1 ? (qi++, renderP1()) : show('part2'); }
+function p1Next(){
+  if(qi < SCENARIOS.length-1){ qi++; renderP1(); return; }
+  document.getElementById('p2count').textContent = `${PART2_STEP} / ${TOTAL_STEPS}`;
+  document.getElementById('p2bar').style.width = `${(PART2_STEP/TOTAL_STEPS)*100}%`;
+  show('part2');
+}
 function p1Back(){ if(qi>0){ qi--; renderP1(); } }
 
 /* ================= SCORING ================= */
@@ -805,8 +800,9 @@ function renderExit(){
   const q = EXIT[exIdx];
   document.getElementById('exTitle').textContent = q.title;
   document.getElementById('exLead').textContent  = q.lead;
-  document.getElementById('exCount').textContent = `${12+exIdx} / 14`;
-  document.getElementById('exBar').style.width   = `${88 + (exIdx+1)*4}%`;
+  const exStep = PART2_STEP + 1 + exIdx;
+  document.getElementById('exCount').textContent = `${exStep} / ${TOTAL_STEPS}`;
+  document.getElementById('exBar').style.width   = `${(exStep/TOTAL_STEPS)*100}%`;
   document.getElementById('exBack').style.visibility = exIdx===0 ? 'hidden' : 'visible';
   document.getElementById('exNext').textContent = (exIdx === EXIT.length-1) ? 'Finish \u2192' : 'Next \u2192';
 
