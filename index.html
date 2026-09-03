@@ -294,6 +294,11 @@ footer{background:var(--ink);color:var(--aqua);text-align:center;padding:26px 22
   content:'';position:absolute;left:5px;top:1px;width:6px;height:11px;
   border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg);
 }
+.other-text{
+  width:100%;font:inherit;color:var(--ink);border:2px solid var(--aqua);
+  border-radius:12px;padding:11px 14px;background:#fff;margin-top:12px;
+}
+.other-text:focus{outline:3px solid var(--sun);outline-offset:2px;border-color:var(--teal)}
 
 /* ---------- textarea ---------- */
 textarea{
@@ -619,7 +624,7 @@ const EXIT = [
    {k:'school',     t:'Your school\u2019s counselling service'},
    {k:'community',  t:'Community services (COMIT, Youth Integrated Team)'}]},
 
- {id:'interest', type:'multi',
+ {id:'interest', type:'multi', allowOtherText:true,
   title:'What would you like to see more of at your school?',
   lead:'Pick as many as you like.',
   options:[
@@ -630,7 +635,7 @@ const EXIT = [
    'Community Drop in Space',
    'Others']},
 
- {id:'topics', type:'multi',
+ {id:'topics', type:'multi', allowOtherText:true,
   title:'What topics are you interested in?',
   lead:'Pick as many as you like.',
   options:[
@@ -851,6 +856,7 @@ function renderExit(){
   if(q.type === 'multi'){
     const wrap = document.createElement('div');
     wrap.className = 'opts';
+    let otherWrap = null;
     q.options.forEach(o=>{
       const b = document.createElement('button');
       b.type = 'button';
@@ -863,11 +869,28 @@ function renderExit(){
         at === -1 ? arr.push(o) : arr.splice(at,1);
         b.classList.toggle('picked', at === -1);
         b.setAttribute('aria-pressed', at === -1);
+        if(otherWrap) otherWrap.hidden = !arr.includes('Others');
         updateExitNextState();
       };
       wrap.appendChild(b);
     });
     body.appendChild(wrap);
+
+    if(q.allowOtherText){
+      const stateKey = q.id + 'OtherText';
+      otherWrap = document.createElement('div');
+      otherWrap.hidden = !exitData[q.id].includes('Others');
+      const otherInput = document.createElement('input');
+      otherInput.type = 'text';
+      otherInput.className = 'other-text';
+      otherInput.maxLength = 120;
+      otherInput.placeholder = 'Please specify\u2026';
+      otherInput.setAttribute('aria-label', 'Please specify what you mean by Others');
+      otherInput.value = exitData[stateKey] || '';
+      otherInput.oninput = ()=>{ exitData[stateKey] = otherInput.value; };
+      otherWrap.appendChild(otherInput);
+      body.appendChild(otherWrap);
+    }
   }
 
   updateExitNextState();
