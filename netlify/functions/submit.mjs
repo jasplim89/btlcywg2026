@@ -26,18 +26,28 @@ const SUPPORTER_STYLES = [
   "The Real One",
 ];
 
-// Exit Q14 options, in the order they appear in the quiz.
+// Exit Q3 options (format preferences), in the order they appear in the quiz.
 // Keys become the flattened column names (int_*).
 const INTEREST_OPTIONS = [
-  ["int_transitions",      "Workshops on managing life transitions"],
-  ["int_stress_wellbeing", "Talks on stress and academic wellbeing"],
-  ["int_peer_training",    "Peer support training"],
-  ["int_booths_games",     "Interactive booths or games"],
-  ["int_friendships",      "Sessions on friendships and relationships"],
-  ["int_small_groups",     "Small group programmes"],
+  ["int_workshops",    "Workshops"],
+  ["int_talks",        "Talks"],
+  ["int_trainings",    "Trainings"],
+  ["int_booths_games", "Booths or games"],
+  ["int_dropin",       "Community Drop in Space"],
+  ["int_others",       "Others"],
 ];
 
-const WILLINGNESS_KEYS = ["professionals", "family", "friends", "schoolmates"];
+// Exit Q4 options (topic preferences), in the order they appear in the quiz.
+// Keys become the flattened column names (topic_*).
+const TOPICS_OPTIONS = [
+  ["topic_transitions",      "Managing change and transition"],
+  ["topic_stress_wellbeing", "Managing stress and academic well-being"],
+  ["topic_peer_support",     "Peer Support"],
+  ["topic_friendships",      "Friendships and relationships"],
+  ["topic_others",           "Others"],
+];
+
+const WILLINGNESS_KEYS = ["professionals", "family", "friends", "teachers", "schoolmates"];
 const AWARENESS_KEYS   = ["firststop", "school", "community"];
 
 const json = (obj, status) =>
@@ -97,13 +107,20 @@ export default async (req) => {
     awareness["aware_" + k] = gridVal(exit.awareness, k, 3); // 1=not aware, 2=aware, 3=used
   }
 
-  const picked = Array.isArray(exit.interest) ? exit.interest : [];
+  const pickedInterest = Array.isArray(exit.interest) ? exit.interest : [];
   const interest = {};
   for (const [col, label] of INTEREST_OPTIONS) {
-    interest[col] = picked.includes(label) ? 1 : 0;
+    interest[col] = pickedInterest.includes(label) ? 1 : 0;
   }
   // Lets you tell a skipped question apart from a genuine "none of these".
-  const interestCount = picked.length;
+  const interestCount = pickedInterest.length;
+
+  const pickedTopics = Array.isArray(exit.topics) ? exit.topics : [];
+  const topics = {};
+  for (const [col, label] of TOPICS_OPTIONS) {
+    topics[col] = pickedTopics.includes(label) ? 1 : 0;
+  }
+  const topicsCount = pickedTopics.length;
 
   const pct = (d) =>
     Math.round((body["score" + d] / DIM_MAX[d]) * 1000) / 10; // one decimal
@@ -134,6 +151,8 @@ export default async (req) => {
     ...awareness,
     ...interest,
     interestCount,
+    ...topics,
+    topicsCount,
 
     name: String(body.name || "").slice(0, 100), // optional; PDPA notice shown at collection
     age: body.age,
