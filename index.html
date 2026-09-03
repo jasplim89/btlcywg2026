@@ -407,7 +407,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
   <div class="q-stage">
     <div class="wrap">
       <div class="q-card">
-        <span class="eyebrow">Before you go &mdash; 3 quick questions</span>
+        <span class="eyebrow">Before you go &mdash; 4 quick questions</span>
         <h2 id="exTitle"></h2>
         <p class="sc-lead" id="exLead"></p>
         <div id="exBody"></div>
@@ -435,7 +435,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
       <div id="dimCards"></div>
 
       <div style="text-align:center;margin:6px 0 22px">
-        <button class="btn sun" onclick="startExit()">Almost done &mdash; 3 quick questions &rarr;</button>
+        <button class="btn sun" onclick="startExit()">Almost done &mdash; 4 quick questions &rarr;</button>
       </div>
 
       <div class="gentle">
@@ -474,7 +474,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
         <details class="pdpa">
           <summary>📄 Data protection notice (Personal Data Protection Act 2012)</summary>
           <div class="pdpa-body">
-            <p><strong>What we collect:</strong> your four dimension scores, your supporter style, your answers to the 3 quick questions, age, and — only if you choose to provide them — your name, contact details, and your interest in learning about self-support resources. We also record the date and time of submission. We do <em>not</em> collect your answers to individual questions or anything you wrote in your personal reflection.</p>
+            <p><strong>What we collect:</strong> your four dimension scores, your supporter style, your answers to the 4 quick questions, age, and — only if you choose to provide them — your name, contact details, and your interest in learning about self-support resources. We also record the date and time of submission. We do <em>not</em> collect your answers to individual questions or anything you wrote in your personal reflection.</p>
             <p><strong>Purposes:</strong> (1) to evaluate and improve the peer support programme, using scores in aggregated form; and (2) if you indicated interest, to contact you with information and resources on supporting your own wellbeing.</p>
             <p><strong>Storage &amp; access:</strong> your data is stored securely within our organisation's Microsoft 365 environment and is accessible only to the programme team. It will not be sold, and will not be disclosed to third parties except as required by law. It will be retained only for as long as needed for the above purposes, and no longer than 2 years, after which it is deleted.</p>
             <p><strong>Your rights:</strong> providing personal data is voluntary. You may withdraw your consent, or request access to or correction of your data, at any time by contacting our Data Protection Officer at <a href="mailto:dpo@example.org">dpo@example.org</a>. Withdrawing consent will not affect your participation in the programme in any way.</p>
@@ -597,7 +597,7 @@ const SCENARIOS = [
 /* Per-dimension max = (number of its scenarios) x 4 */
 const DIM_MAX = SCENARIOS.reduce((m,s)=>{ m[s.d]=(m[s.d]||0)+4; return m; },{});
 
-/* 3 exit questions \u2014 BTL KPI capture, placed after the results reveal */
+/* 4 exit questions \u2014 BTL KPI capture, placed after the results reveal */
 const EXIT = [
  {id:'willingness', type:'grid',
   title:'How willing would you be to turn to each of these for support?',
@@ -607,7 +607,7 @@ const EXIT = [
    {k:'professionals', t:'A professional (counsellor, social worker, psychologist)'},
    {k:'family',        t:'Family'},
    {k:'friends',       t:'Friends'},
-   {k:'Lecturers or teachers',       t:'Lecturers or teachers'},
+   {k:'teachers',       t:'Lecturers or teachers'},
    {k:'schoolmates',   t:'Classmates or schoolmates'}]},
 
  {id:'awareness', type:'grid',
@@ -628,9 +628,9 @@ const EXIT = [
    'Trainings',
    'Booths or games',
    'Community Drop in Space',
-   'Others']}
+   'Others']},
 
-   {id:'interest', type:'multi',
+ {id:'topics', type:'multi',
   title:'What topics are you interested in?',
   lead:'Pick as many as you like.',
   options:[
