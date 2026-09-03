@@ -562,7 +562,7 @@ const SCENARIOS = [
   reflect:"They already know the practical fix. (d) confirms the fear that stopped them telling anyone. (a) treats the skipping as a symptom, not the story."},
 
  {d:'C',
-  text:"A friend is agonising over a job offer that would mean moving far from home.",
+  text:"A friend is agonising over a CCA that would mean having less time for other things.",
   opts:[
    {k:'a',t:"\u201cDo you want help thinking it through, or do you just need to vent?\u201d", s:4},
    {k:'b',t:"\u201cWhat\u2019s pulling you toward each option?\u201d", s:3},
@@ -611,6 +611,7 @@ const EXIT = [
    {k:'professionals', t:'A professional (counsellor, social worker, psychologist)'},
    {k:'family',        t:'Family'},
    {k:'friends',       t:'Friends'},
+   {k:'Lecturers or teachers',       t:'Lecturers or teachers'},
    {k:'schoolmates',   t:'Classmates or schoolmates'}]},
 
  {id:'awareness', type:'grid',
@@ -626,12 +627,22 @@ const EXIT = [
   title:'What would you like to see more of at your school?',
   lead:'Pick as many as you like.',
   options:[
-   'Workshops on managing life transitions',
-   'Talks on stress and academic wellbeing',
-   'Peer support training',
-   'Interactive booths or games',
-   'Sessions on friendships and relationships',
-   'Small group programmes']}
+   'Workshops',
+   'Talks',
+   'Trainings',
+   'Booths or games',
+   'Community Drop in Space',
+   'Others']}
+
+   {id:'interest', type:'multi',
+  title:'What topics are you interested in?',
+  lead:'Pick as many as you like.',
+  options:[
+   'Managing change and transition',
+   'Managing stress and academic well-being',
+   'Peer Support',
+   'Friendships and relationships',
+   'Others']}
 ];
 
 /* Total step count for progress labels: scenarios + 1 (Part 2 reflection) + exit questions.
