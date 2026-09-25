@@ -307,6 +307,17 @@ textarea{
   margin:8px 0 4px;background:#fff;color:var(--ink);
 }
 textarea:focus{outline:none;border-color:var(--teal)}
+
+/* ---------- facts intro + facts recall quiz ---------- */
+.facts-list{display:grid;gap:14px;margin:22px 0 8px}
+.fact-card{
+  background:var(--paper);border:2px solid var(--aqua);border-radius:16px;
+  padding:16px 18px;font-size:1rem;font-weight:600;color:var(--ink);
+  display:flex;gap:12px;align-items:flex-start;
+}
+.fact-card .emoji{font-size:1.4rem;flex-shrink:0;line-height:1.35}
+.reflect.correct{border-color:var(--teal);background:rgba(0,155,170,.08)}
+.reflect.incorrect{border-color:var(--coral);background:rgba(255,138,122,.10)}
 </style>
 </head>
 <body>
@@ -324,7 +335,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
           <span class="fact">🕒 ~6-7 minutes</span>
           <span class="fact">🎂 Ages 13–25</span>
         </div>
-        <button class="btn sun" id="startBtn" onclick="startQuiz()">See how you show up →</button>
+        <button class="btn sun" id="startBtn" onclick="showFacts()">See how you show up →</button>
       </div>
       <div class="mascot-stage">
         <div class="speech">Hey, I'm BRAVE!</div>
@@ -335,6 +346,28 @@ textarea:focus{outline:none;border-color:var(--teal)}
   </div>
   <div class="privacy-strip">
     <strong>Before you start:</strong> think of your last 2–3 real conversations where someone came to you with something on their mind. Answer based on what you <em>actually did</em> — not what you know you should do.
+  </div>
+</section>
+
+<!-- ============ FACTS INTRO (required, before the quiz starts) ============ -->
+<section id="facts" class="view">
+  <div class="topbar">
+    <div class="wrap">
+      <img src="logo.png" alt="Beyond the Label">
+    </div>
+  </div>
+  <div class="q-stage">
+    <div class="wrap">
+      <div class="q-card">
+        <span class="eyebrow">Before you begin</span>
+        <h2>A few facts, first</h2>
+        <p class="sc-lead">These are the mental health facts in Singapore. Informal support &mdash; like support from peers &mdash; is one of the most common ways people help and seek help today. Come on the journey to see how you hold space for a friend, and be part of that journey of care.</p>
+        <div class="facts-list" id="factsList"></div>
+        <div class="q-nav" style="justify-content:flex-end">
+          <button class="btn sun" onclick="beginJourney()">Begin the journey &rarr;</button>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -412,7 +445,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
   <div class="q-stage">
     <div class="wrap">
       <div class="q-card">
-        <span class="eyebrow">Before you go &mdash; 4 quick questions</span>
+        <span class="eyebrow">Before you go &mdash; 7 quick questions</span>
         <h2 id="exTitle"></h2>
         <p class="sc-lead" id="exLead"></p>
         <div id="exBody"></div>
@@ -421,6 +454,35 @@ textarea:focus{outline:none;border-color:var(--teal)}
           <button class="btn" id="exNext" onclick="exNext()">Next &rarr;</button>
         </div>
         <p class="sc-lead" id="exHint" style="margin-top:8px;color:var(--muted,#8a8f98)" hidden>Please answer every row before continuing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FACTS RECALL QUIZ (towards the end, after the exit survey) ============ -->
+<section id="factsQuiz" class="view">
+  <div class="topbar">
+    <div class="wrap">
+      <img src="logo.png" alt="Beyond the Label">
+      <div class="progress" aria-hidden="true"><div id="fqBar"></div></div>
+      <span class="step-label" id="fqCount"></span>
+    </div>
+  </div>
+  <div class="q-stage">
+    <div class="wrap">
+      <div class="q-card">
+        <span class="eyebrow">Let's see what stuck</span>
+        <h2 id="fqText"></h2>
+        <p class="sc-lead">Pick one.</p>
+        <div class="opts" id="fqOpts"></div>
+        <div class="reflect" id="fqReflect" hidden>
+          <strong id="fqReflectLabel">Worth noticing</strong>
+          <p id="fqReflectText"></p>
+        </div>
+        <div class="q-nav">
+          <button class="ghost" id="fqBack" onclick="fqBack()">&larr; Back</button>
+          <button class="btn" id="fqNext" onclick="fqNext()" hidden>Next &rarr;</button>
+        </div>
       </div>
     </div>
   </div>
@@ -440,7 +502,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
       <div id="dimCards"></div>
 
       <div style="text-align:center;margin:6px 0 22px">
-        <button class="btn sun" onclick="startExit()">Almost done &mdash; 4 quick questions &rarr;</button>
+        <button class="btn sun" onclick="startExit()">Almost done &mdash; 7 quick questions &rarr;</button>
       </div>
 
       <div class="gentle">
@@ -479,10 +541,10 @@ textarea:focus{outline:none;border-color:var(--teal)}
         <details class="pdpa">
           <summary>📄 Data protection notice (Personal Data Protection Act 2012)</summary>
           <div class="pdpa-body">
-            <p><strong>What we collect:</strong> your four dimension scores, your supporter style, your answers to the 4 quick questions, age, and — only if you choose to provide them — your name, contact details, and your interest in learning about self-support resources. We also record the date and time of submission. We do <em>not</em> collect your answers to individual questions or anything you wrote in your personal reflection.</p>
+            <p><strong>What we collect:</strong> your four dimension scores, your supporter style, your answers to the 7 quick questions, your facts-quiz score, age, and — only if you choose to provide them — your name, contact details, and your interest in learning about self-support resources. We also record the date and time of submission. We do <em>not</em> collect your answers to individual questions or anything you wrote in your personal reflection.</p>
             <p><strong>Purposes:</strong> (1) to evaluate and improve the peer support programme, using scores in aggregated form; and (2) if you indicated interest, to contact you with information and resources on supporting your own wellbeing.</p>
-            <p><strong>Storage &amp; access:</strong> your data is stored securely within our organisation's Microsoft 365 environment and is accessible only to the programme team. It will not be sold, and will not be disclosed to third parties except as required by law. It will be retained only for as long as the purposes for which such data is collected or used continues, after which it is deleted.</p>
-            <p><strong>Your rights:</strong> providing personal data is voluntary. You may withdraw your consent, or request access to or correction of your data, at any time by contacting our Data Protection Officer at <a href="mailto:btl_admin@touch.org.sg">btl_admin@touch.org.sg</a>. Withdrawing consent will not affect your participation in the programme in any way.</p>
+            <p><strong>Storage &amp; access:</strong> your data is stored securely within our organisation's Microsoft 365 environment and is accessible only to the programme team. It will not be sold, and will not be disclosed to third parties except as required by law. It will be retained only for as long as needed for the above purposes, and no longer than 2 years, after which it is deleted.</p>
+            <p><strong>Your rights:</strong> providing personal data is voluntary. You may withdraw your consent, or request access to or correction of your data, at any time by contacting our Data Protection Officer at <a href="mailto:dpo@example.org">dpo@example.org</a>. Withdrawing consent will not affect your participation in the programme in any way.</p>
             <p><strong>If you are under 18:</strong> please make sure you understand this notice before consenting — feel free to ask a facilitator, parent, or guardian to go through it with you first.</p>
           </div>
         </details>
@@ -602,8 +664,57 @@ const SCENARIOS = [
 /* Per-dimension max = (number of its scenarios) x 4 */
 const DIM_MAX = SCENARIOS.reduce((m,s)=>{ m[s.d]=(m[s.d]||0)+4; return m; },{});
 
-/* 4 exit questions \u2014 BTL KPI capture, placed after the results reveal */
+/* Mental-health facts, from the research & outcomes team's KPI sheet.
+   Structured as KPI "blocks" so future outcomes can be added as new entries here
+   without touching any other code \u2014 each question needs a factText (shown on the
+   facts intro screen) and a matching quiz question+options+correct answer (shown
+   on the facts recall quiz, towards the end of the journey). */
+const FACTS_KPIS = [
+ {id:'kpi1_awareness', outcome:'Awareness of mental health conditions', kpiLabel:'BTL KPI 1',
+  questions:[
+   {id:'q1',
+    factText:'An estimated <strong>1 in 7</strong> people in Singapore may experience a mental health condition at some point in their lives.',
+    text:'How many people in Singapore might have a mental health condition at some point in their lives?',
+    options:['1 in 4','1 in 7','1 in 10','1 in 50','1 in 80','1 in 100'],
+    correct:'1 in 7'},
+   {id:'q2',
+    factText:'On average, people delay seeking professional help for their mental health by <strong>more than a year</strong>.',
+    text:'On average, how long do you think people delay seeking professional help for their mental health?',
+    options:['3 months','6 months','Between 6 months and 1 year','More than 1 year'],
+    correct:'More than 1 year'},
+   {id:'q3',
+    factText:'Recovery from mental health conditions <strong>is possible</strong>.',
+    text:'Do you think recovery is possible for mental health conditions?',
+    options:['Yes','No','Not sure'],
+    correct:'Yes'}
+  ]}
+];
+/* Flattened for navigation, same one-question-at-a-time pattern as EXIT. */
+const FACTS_QUESTIONS = FACTS_KPIS.flatMap(kpi => kpi.questions.map(q => ({...q, kpiId:kpi.id})));
+
+/* 7 exit questions \u2014 BTL KPI capture, placed after the results reveal */
 const EXIT = [
+ {id:'seekHelp', type:'grid',
+  title:'How much do you agree with this?',
+  lead:'There\u2019s no right answer \u2014 just where you are right now.',
+  cols:['Strongly disagree','Disagree','Neutral','Agree','Strongly agree','Prefer not to say'],
+  rows:[
+   {k:'intend', t:'I intend to seek support for my mental health \u2014 e.g. when I encounter stressful situations or challenges in my friendships, studies, or other personal matters, and feel affected by them.'}]},
+
+ {id:'soughtHelpBTL', type:'grid',
+  title:'One more thing',
+  lead:'',
+  cols:['Yes','Not yet, but I intend to','No'],
+  rows:[
+   {k:'sought', t:'Have you sought help for your mental health because of Beyond the Label this year?'}]},
+
+ {id:'supportOthers', type:'grid',
+  title:'How much do you agree with this?',
+  lead:'There\u2019s no right answer \u2014 just where you are right now.',
+  cols:['Strongly disagree','Disagree','Neutral','Agree','Strongly agree','Prefer not to say'],
+  rows:[
+   {k:'intend', t:'I intend to support others with mental health conditions \u2014 this may include my peers who are facing challenges affecting their mental health, as they go through changes and transitions.'}]},
+
  {id:'willingness', type:'grid',
   title:'How willing would you be to turn to each of these for support?',
   lead:'There\u2019s no right answer \u2014 we\u2019re mapping where young people actually go.',
@@ -657,6 +768,8 @@ let picks    = new Array(SCENARIOS.length).fill(null);  // chosen option key per
 let qi       = 0;                                       // scenario index
 let exIdx    = 0;                                       // exit question index
 let exitData = {};                                      // exit survey answers
+let factsIdx   = 0;                                      // facts recall quiz index
+let factsPicks = new Array(FACTS_QUESTIONS.length).fill(null); // chosen option text per facts question
 let sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
 
 /* ================= NAV ================= */
@@ -681,6 +794,24 @@ function preloadDimImages(){
 if(document.readyState === 'loading'){
   document.addEventListener('DOMContentLoaded', preloadDimImages);
 } else { preloadDimImages(); }
+
+function showFacts(){
+  const list = document.getElementById('factsList');
+  list.innerHTML = '';
+  const emojis = ['\u{1F9E0}','\u23F3','\u{1F331}'];
+  let i = 0;
+  FACTS_KPIS.forEach(kpi=>{
+    kpi.questions.forEach(q=>{
+      const card = document.createElement('div');
+      card.className = 'fact-card';
+      card.innerHTML = `<span class="emoji">${emojis[i % emojis.length]}</span><span>${q.factText}</span>`;
+      list.appendChild(card);
+      i++;
+    });
+  });
+  show('facts');
+}
+function beginJourney(){ startQuiz(); }
 
 function startQuiz(){
   const btn = document.getElementById('startBtn');
@@ -911,19 +1042,82 @@ function updateExitNextState(){
 function exNext(){
   if(!exitQuestionComplete()) return; // belt-and-braces: button is disabled, but guard anyway
   if(exIdx < EXIT.length-1){ exIdx++; renderExit(); }
-  else {
-    document.getElementById('shareCard').hidden = false;
-    show('results');
-    setTimeout(()=>document.getElementById('shareCard').scrollIntoView({behavior:'smooth',block:'start'}),120);
-  }
+  else { startFactsQuiz(); }
 }
 function exBack(){ exIdx > 0 ? (exIdx--, renderExit()) : show('results'); }
+
+/* ================= FACTS RECALL QUIZ ================= */
+function startFactsQuiz(){ factsIdx = 0; renderFactsQuiz(); show('factsQuiz'); }
+
+function renderFactsQuiz(){
+  const q = FACTS_QUESTIONS[factsIdx];
+  document.getElementById('fqText').textContent = q.text;
+  document.getElementById('fqCount').textContent = `Question ${factsIdx+1} of ${FACTS_QUESTIONS.length}`;
+  document.getElementById('fqBar').style.width   = `${(factsIdx/FACTS_QUESTIONS.length)*100}%`;
+  document.getElementById('fqBack').style.visibility = factsIdx===0 ? 'hidden' : 'visible';
+
+  const wrap = document.getElementById('fqOpts');
+  wrap.innerHTML = '';
+  q.options.forEach(o=>{
+    const b = document.createElement('button');
+    b.className = 'opt' + (factsPicks[factsIdx]===o ? ' picked' : '');
+    b.textContent = o;
+    b.onclick = ()=>{
+      factsPicks[factsIdx] = o;
+      wrap.querySelectorAll('.opt').forEach(x=>x.classList.remove('picked'));
+      b.classList.add('picked');
+      revealFactsAnswer(q, o);
+    };
+    wrap.appendChild(b);
+  });
+
+  factsPicks[factsIdx] ? revealFactsAnswer(q, factsPicks[factsIdx]) : hideFactsAnswer();
+}
+function revealFactsAnswer(q, picked){
+  const correct = picked === q.correct;
+  const box = document.getElementById('fqReflect');
+  box.className = 'reflect ' + (correct ? 'correct' : 'incorrect');
+  document.getElementById('fqReflectLabel').textContent = correct ? 'Nice \u2014 that\u2019s right!' : 'Not quite';
+  document.getElementById('fqReflectText').innerHTML = correct
+    ? q.factText
+    : `The correct answer is <strong>${q.correct}</strong>. ${q.factText}`;
+  box.hidden = false;
+  const n = document.getElementById('fqNext');
+  n.hidden = false;
+  n.textContent = (factsIdx === FACTS_QUESTIONS.length-1) ? 'Finish \u2192' : 'Next \u2192';
+}
+function hideFactsAnswer(){
+  document.getElementById('fqReflect').hidden = true;
+  document.getElementById('fqNext').hidden = true;
+}
+function fqNext(){
+  if(factsIdx < FACTS_QUESTIONS.length-1){ factsIdx++; renderFactsQuiz(); return; }
+  document.getElementById('shareCard').hidden = false;
+  show('results');
+  setTimeout(()=>document.getElementById('shareCard').scrollIntoView({behavior:'smooth',block:'start'}),120);
+}
+function fqBack(){
+  if(factsIdx>0){ factsIdx--; renderFactsQuiz(); }
+  else { show('exit'); }
+}
+/* correctCount/total per KPI block, plus an overall array aligned to FACTS_QUESTIONS
+   (mirrors how `picks` works for SCENARIOS) \u2014 kept as correct/incorrect flags only,
+   consistent with this app's existing stance of not sending raw per-question answers. */
+function computeFactsResults(){
+  const correctArr = FACTS_QUESTIONS.map((q,i)=> factsPicks[i] === q.correct ? 1 : 0);
+  const perKpi = {};
+  FACTS_KPIS.forEach(kpi=>{ perKpi[kpi.id] = {correct:0, total:kpi.questions.length}; });
+  FACTS_QUESTIONS.forEach((q,i)=>{ if(correctArr[i]) perKpi[q.kpiId].correct++; });
+  return { correctArr, perKpi, score: correctArr.reduce((a,b)=>a+b,0), total: FACTS_QUESTIONS.length };
+}
 
 
 function retake(){
   picks    = new Array(SCENARIOS.length).fill(null);
   exitData = {};
   qi = 0; exIdx = 0;
+  factsIdx = 0;
+  factsPicks = new Array(FACTS_QUESTIONS.length).fill(null);
   sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2);
   ['p2reflectInput','userName','userAge','userContact'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.value='';
@@ -965,12 +1159,17 @@ async function submitScores(){
     if(p>highPct){highPct=p;highest=d;}
   }
 
+  const factsResults = computeFactsResults();
+
   const payload = {
     responseId: sessionId,
     submittedAt: new Date().toISOString(),
     supporterStyle: DIMS[highest].style,
     strongest: highest,
     exit: exitData,
+    factsCorrect: factsResults.correctArr,   // e.g. [1,0,1], index-aligned to FACTS_QUESTIONS
+    factsScore: factsResults.score,
+    factsTotal: factsResults.total,
     name: document.getElementById('userName').value.trim(),          // optional
     age: age,
     interestedInSupport: document.getElementById('interest').checked,
