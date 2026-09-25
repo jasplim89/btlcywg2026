@@ -1,12 +1,14 @@
-// Netlify Function: relays anonymous quiz results to a Power Automate flow,
-// flattened into one row per response so Power BI can aggregate without parsing JSON.
-//
-// The flow URL is a secret kept in a Netlify environment variable, so it is
-// never visible in the browser / page source.
-//
-// Netlify env var to set (Site settings -> Environment variables):
-//   POWER_AUTOMATE_URL = the "HTTP POST URL" from your Power Automate trigger
-//
+// Netlify Function: relays a quiz submission to a Power Automate flow, which
+// writes it into an Excel table in SharePoint/OneDrive. The site never talks
+// to Power Automate directly; this function is the only thing that knows the
+// flow's URL, and it also whitelists + flattens the payload before relaying it.
+
+const json = (body, status = 200) => ({
+  statusCode: status,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
 // Score ranges follow the 12-question build: 8 scenarios (2 per dimension, uniform
 // weighting per decision D5), each option worth 1-4.
 //   Welcoming  (A) 2 scenarios ->  2-8
@@ -18,13 +20,6 @@
 
 const DIM_MAX = { A: 8, B: 8, C: 8, D: 8 };
 const DIM_MIN = { A: 2, B: 2, C: 2, D: 2 };
-
-const SUPPORTER_STYLES = [
-  "The Open Door",
-  "The Steady One",
-  "The Space Maker",
-  "The Real One",
-];
 
 // Exit Q3 options (format preferences), in the order they appear in the quiz.
 // Keys become the flattened column names (int_*).
@@ -49,63 +44,67 @@ const TOPICS_OPTIONS = [
 
 const WILLINGNESS_KEYS = ["professionals", "family", "friends", "teachers", "schoolmates"];
 const AWARENESS_KEYS   = ["firststop", "school", "community"];
+// Single-row "grid" questions (KPI4/KPI5, research & outcomes team) -- same
+// 1-6 / 1-3 column-position encoding as the multi-row grids above.
+// 6 = "Prefer not to say" on the two 6-point agreement scales; not a real
+// rating, so exclude it before averaging if computing a mean agreement score.
 
-const json = (obj, status) =>
-  new Response(JSON.stringify(obj), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+// Facts recall quiz (research & outcomes team's KPI sheet). Keep this array's
+// order in sync with FACTS_QUESTIONS in index.html -- each entry becomes one
+// "<key>_correct" column (0/1). Extend this list when the team adds more KPI
+// questions; nothing else needs to change.
+const FACTS_QUESTION_KEYS = [
+  "kpi1_awareness_q1",
+  "kpi1_awareness_q2",
+  "kpi1_awareness_q3",
+];
+
+function inRange(n, min, max) {
+  return typeof n === "number" && Number.isFinite(n) && n >= min && n <= max;
+}
 
 export default async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-
-  const flowUrl = process.env.POWER_AUTOMATE_URL;
-  if (!flowUrl) return json({ error: "Pipeline not configured" }, 500);
 
   let body;
   try {
     body = await req.json();
   } catch {
-    return json({ error: "Invalid JSON" }, 400);
-  }
-
-  // ---- Validate the fields we require ----
-  const inRange = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
-
-  const scoresValid = ["A", "B", "C", "D"].every((d) =>
-    inRange(body["score" + d], DIM_MIN[d], DIM_MAX[d])
-  );
-
-  if (
-    !scoresValid ||
-    !["A", "B", "C", "D"].includes(body.lowestDimension) ||
-    !["A", "B", "C", "D"].includes(body.strongest) ||
-    !inRange(body.age, 13, 25) ||
-    typeof body.interestedInSupport !== "boolean"
-  ) {
     return json({ error: "Invalid payload" }, 400);
   }
 
-  // ---- Flatten the exit survey ----
-  // Every exit answer is optional: a participant can leave any row blank.
-  // Unanswered cells are sent as "" so the spreadsheet column stays empty
-  // rather than defaulting to a real value that would skew averages.
+  const validDims = ["A", "B", "C", "D"].every((d) =>
+    inRange(body["score" + d], DIM_MIN[d], DIM_MAX[d])
+  );
+  const validAge = inRange(body.age, 13, 25);
+  if (!validDims || !validAge || typeof body.responseId !== "string") {
+    return json({ error: "Invalid payload" }, 400);
+  }
+
   const exit = body.exit && typeof body.exit === "object" ? body.exit : {};
 
-  const gridVal = (section, key, hi) => {
-    const v = section && section[key];
-    return inRange(v, 1, hi) ? v : "";
-  };
-
   const willingness = {};
+  const willSrc = exit.willingness && typeof exit.willingness === "object" ? exit.willingness : {};
   for (const k of WILLINGNESS_KEYS) {
-    willingness["will_" + k] = gridVal(exit.willingness, k, 5); // 1-5 scale
+    const v = willSrc[k];
+    willingness["will_" + k] = inRange(v, 1, 5) ? v : "";
   }
 
   const awareness = {};
+  const awareSrc = exit.awareness && typeof exit.awareness === "object" ? exit.awareness : {};
   for (const k of AWARENESS_KEYS) {
-    awareness["aware_" + k] = gridVal(exit.awareness, k, 3); // 1=not aware, 2=aware, 3=used
+    const v = awareSrc[k];
+    awareness["aware_" + k] = inRange(v, 1, 3) ? v : "";
   }
+
+  const seekHelpSrc = exit.seekHelp && typeof exit.seekHelp === "object" ? exit.seekHelp : {};
+  const intend_seek_help = inRange(seekHelpSrc.intend, 1, 6) ? seekHelpSrc.intend : "";
+
+  const soughtSrc = exit.soughtHelpBTL && typeof exit.soughtHelpBTL === "object" ? exit.soughtHelpBTL : {};
+  const sought_help_btl = inRange(soughtSrc.sought, 1, 3) ? soughtSrc.sought : "";
+
+  const supportOthersSrc = exit.supportOthers && typeof exit.supportOthers === "object" ? exit.supportOthers : {};
+  const intend_support_others = inRange(supportOthersSrc.intend, 1, 6) ? supportOthersSrc.intend : "";
 
   const pickedInterest = Array.isArray(exit.interest) ? exit.interest : [];
   const interest = {};
@@ -129,31 +128,37 @@ export default async (req) => {
     ? String(exit.topicsOtherText || "").slice(0, 120)
     : "";
 
-  const pct = (d) =>
-    Math.round((body["score" + d] / DIM_MAX[d]) * 1000) / 10; // one decimal
+  // Facts recall quiz: an array of 0/1 flags, index-aligned to FACTS_QUESTION_KEYS
+  // (mirrors how scenario picks are index-aligned on the frontend). Anything
+  // missing or malformed just comes through as 0/blank rather than failing the
+  // whole submission -- this is a bonus KPI block, not core quiz data.
+  const factsCorrectArr = Array.isArray(body.factsCorrect) ? body.factsCorrect : [];
+  const facts = {};
+  FACTS_QUESTION_KEYS.forEach((key, i) => {
+    facts[key + "_correct"] = factsCorrectArr[i] ? 1 : 0;
+  });
+  const factsScore = Number.isFinite(body.factsScore)
+    ? body.factsScore
+    : factsCorrectArr.filter(Boolean).length;
+  const factsTotal = Number.isFinite(body.factsTotal)
+    ? body.factsTotal
+    : FACTS_QUESTION_KEYS.length;
 
-  // ---- Whitelist: only these fields ever leave the function ----
+  // Whitelisted output only -- nothing from `body` is forwarded unfiltered.
   const clean = {
-    responseId: String(body.responseId || "").slice(0, 64),
-    submittedAt: new Date().toISOString(), // server-side timestamp
-
-    supporterStyle: SUPPORTER_STYLES.includes(body.supporterStyle)
-      ? body.supporterStyle
-      : "",
-    strongest: body.strongest,
-    lowestDimension: body.lowestDimension,
-
-    scoreA: body.scoreA,
-    scoreB: body.scoreB,
-    scoreC: body.scoreC,
-    scoreD: body.scoreD,
-
-    // Normalised so A/D (max 8) and B/C (max 12) can be charted side by side.
-    pctA: pct("A"),
-    pctB: pct("B"),
-    pctC: pct("C"),
-    pctD: pct("D"),
-
+    responseId: String(body.responseId).slice(0, 100),
+    submittedAt: new Date().toISOString(),
+    supporterStyle: String(body.supporterStyle || "").slice(0, 60),
+    strongest: String(body.strongest || "").slice(0, 1),
+    lowestDimension: String(body.lowestDimension || "").slice(0, 1),
+    scoreA: body.scoreA, scoreB: body.scoreB, scoreC: body.scoreC, scoreD: body.scoreD,
+    pctA: Math.round((body.scoreA / DIM_MAX.A) * 1000) / 10,
+    pctB: Math.round((body.scoreB / DIM_MAX.B) * 1000) / 10,
+    pctC: Math.round((body.scoreC / DIM_MAX.C) * 1000) / 10,
+    pctD: Math.round((body.scoreD / DIM_MAX.D) * 1000) / 10,
+    intend_seek_help,
+    sought_help_btl,
+    intend_support_others,
     ...willingness,
     ...awareness,
     ...interest,
@@ -162,16 +167,17 @@ export default async (req) => {
     ...topics,
     topicsCount,
     topicsOtherText,
-
-    name: String(body.name || "").slice(0, 100), // optional; PDPA notice shown at collection
+    ...facts,
+    factsScore,
+    factsTotal,
+    name: String(body.name || "").slice(0, 100),
     age: body.age,
-    interestedInSupport: body.interestedInSupport,
-    contact: body.interestedInSupport
-      ? String(body.contact || "").slice(0, 120)
-      : "", // contact only kept when follow-up was requested
+    interestedInSupport: !!body.interestedInSupport,
+    contact: body.interestedInSupport ? String(body.contact || "").slice(0, 120) : "",
   };
 
-  // Deliberately NOT sent: per-scenario picks, the Part 2 personal reflection.
+  const flowUrl = process.env.POWER_AUTOMATE_URL;
+  if (!flowUrl) return json({ error: "Pipeline not configured" }, 500);
 
   try {
     const upstream = await fetch(flowUrl, {
@@ -179,10 +185,10 @@ export default async (req) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(clean),
     });
-
     if (!upstream.ok) return json({ error: "Upstream error" }, 502);
-    return json({ ok: true }, 200);
   } catch {
     return json({ error: "Relay failed" }, 502);
   }
+
+  return json({ ok: true });
 };
