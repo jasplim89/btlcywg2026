@@ -3,11 +3,11 @@
 // to Power Automate directly; this function is the only thing that knows the
 // flow's URL, and it also whitelists + flattens the payload before relaying it.
 
-const json = (body, status = 200) => ({
-  statusCode: status,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(body),
-});
+const json = (body, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 
 // Score ranges follow the 12-question build: 8 scenarios (2 per dimension, uniform
 // weighting per decision D5), each option worth 1-4.
