@@ -2,12 +2,23 @@
 // writes it into an Excel table in SharePoint/OneDrive. The site never talks
 // to Power Automate directly; this function is the only thing that knows the
 // flow's URL, and it also whitelists + flattens the payload before relaying it.
+//
+// v2: adds retries + timeouts on the relay (Excel locks, throttling, slow flow
+// starts) and logs the reason for every failure (no personal data) so failed
+// submissions can be diagnosed in Netlify → Logs → Functions → submit.
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
   });
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Relay retry settings. Total budget stays under Netlify's 10s function limit.
+const RELAY_TOTAL_BUDGET_MS = 8_500;
+const RELAY_ATTEMPT_TIMEOUT_MS = 4_000;
+const RELAY_MAX_ATTEMPTS = 3;
 
 // Score ranges follow the 12-question build: 8 scenarios (2 per dimension, uniform
 // weighting per decision D5), each option worth 1-4.
@@ -63,6 +74,48 @@ function inRange(n, min, max) {
   return typeof n === "number" && Number.isFinite(n) && n >= min && n <= max;
 }
 
+// Sends the cleaned row to Power Automate, retrying on throttling (429),
+// server errors (5xx), network errors and timeouts. Returns { ok, reason }.
+async function relay(flowUrl, payload, responseId) {
+  const started = Date.now();
+  let reason = "unknown";
+
+  for (let attempt = 1; attempt <= RELAY_MAX_ATTEMPTS; attempt++) {
+    const remaining = RELAY_TOTAL_BUDGET_MS - (Date.now() - started);
+    if (remaining < 1_000) {
+      reason += " (out of time)";
+      break;
+    }
+
+    try {
+      const upstream = await fetch(flowUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        signal: AbortSignal.timeout(Math.min(RELAY_ATTEMPT_TIMEOUT_MS, remaining)),
+      });
+
+      // 200 = flow has a Response action; 202 = flow accepted without one.
+      if (upstream.ok) {
+        if (attempt > 1) console.log(`[submit] ${responseId}: succeeded on attempt ${attempt}`);
+        return { ok: true };
+      }
+
+      const detail = (await upstream.text().catch(() => "")).slice(0, 300);
+      reason = `flow returned ${upstream.status} ${detail}`;
+      const retryable = upstream.status === 429 || upstream.status >= 500;
+      if (!retryable) break;
+    } catch (err) {
+      reason = err?.name === "TimeoutError" ? "flow timed out" : `network error: ${err?.message}`;
+    }
+
+    console.warn(`[submit] ${responseId}: attempt ${attempt} failed: ${reason}`);
+    await sleep(400 * attempt);
+  }
+
+  return { ok: false, reason };
+}
+
 export default async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -70,6 +123,7 @@ export default async (req) => {
   try {
     body = await req.json();
   } catch {
+    console.warn("[submit] rejected: body was not valid JSON");
     return json({ error: "Invalid payload" }, 400);
   }
 
@@ -78,6 +132,15 @@ export default async (req) => {
   );
   const validAge = inRange(body.age, 13, 25);
   if (!validDims || !validAge || typeof body.responseId !== "string") {
+    // Log which check failed (types/values of scores and age only -- no personal data).
+    console.warn("[submit] rejected: invalid payload", {
+      validDims,
+      scores: ["A", "B", "C", "D"].map((d) => body["score" + d]),
+      validAge,
+      ageType: typeof body.age,
+      ageValue: typeof body.age === "number" ? body.age : undefined,
+      responseIdType: typeof body.responseId,
+    });
     return json({ error: "Invalid payload" }, 400);
   }
 
@@ -177,17 +240,15 @@ export default async (req) => {
   };
 
   const flowUrl = process.env.POWER_AUTOMATE_URL;
-  if (!flowUrl) return json({ error: "Pipeline not configured" }, 500);
+  if (!flowUrl) {
+    console.error("[submit] POWER_AUTOMATE_URL is not set");
+    return json({ error: "Pipeline not configured" }, 500);
+  }
 
-  try {
-    const upstream = await fetch(flowUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(clean),
-    });
-    if (!upstream.ok) return json({ error: "Upstream error" }, 502);
-  } catch {
-    return json({ error: "Relay failed" }, 502);
+  const result = await relay(flowUrl, JSON.stringify(clean), clean.responseId);
+  if (!result.ok) {
+    console.error(`[submit] ${clean.responseId}: relay failed: ${result.reason}`);
+    return json({ error: "Upstream error" }, 502);
   }
 
   return json({ ok: true });
