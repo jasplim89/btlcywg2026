@@ -53,6 +53,21 @@ const TOPICS_OPTIONS = [
   ["topic_others",           "Others"],
 ];
 
+// v2: where the quiz was taken. The site sends the key; the sheet gets the label.
+const LOCATION_LABELS = {
+  school: "School",
+  agency: "Youth agency",
+  online: "Online",
+  other:  "Other",
+};
+
+// v2: the site now saves the same row up to three times as the user goes.
+// Each save carries everything so far; the flow updates the row by responseId.
+//   scores   -> after the 8 scenarios (scores, age, location)
+//   complete -> when results appear (+ 7 quick questions + facts quiz)
+//   shared   -> optional extras sent (+ name, contact, interest in support)
+const STAGES = ["scores", "complete", "shared"];
+
 const WILLINGNESS_KEYS = ["professionals", "family", "friends", "teachers", "schoolmates"];
 const AWARENESS_KEYS   = ["firststop", "school", "community"];
 // Single-row "grid" questions (KPI4/KPI5, research & outcomes team) -- same
@@ -169,24 +184,27 @@ export default async (req) => {
   const supportOthersSrc = exit.supportOthers && typeof exit.supportOthers === "object" ? exit.supportOthers : {};
   const intend_support_others = inRange(supportOthersSrc.intend, 1, 6) ? supportOthersSrc.intend : "";
 
-  const pickedInterest = Array.isArray(exit.interest) ? exit.interest : [];
+  // v2: blank (not 0) when the question hasn't been reached yet, e.g. on a 'scores' save.
+  const interestAnswered = Array.isArray(exit.interest);
+  const pickedInterest = interestAnswered ? exit.interest : [];
   const interest = {};
   for (const [col, label] of INTEREST_OPTIONS) {
-    interest[col] = pickedInterest.includes(label) ? 1 : 0;
+    interest[col] = interestAnswered ? (pickedInterest.includes(label) ? 1 : 0) : "";
   }
   // Lets you tell a skipped question apart from a genuine "none of these".
-  const interestCount = pickedInterest.length;
+  const interestCount = interestAnswered ? pickedInterest.length : "";
   // Only kept if "Others" was actually selected, in case it's stale from an unchecked box.
   const interestOtherText = pickedInterest.includes("Others")
     ? String(exit.interestOtherText || "").slice(0, 120)
     : "";
 
-  const pickedTopics = Array.isArray(exit.topics) ? exit.topics : [];
+  const topicsAnswered = Array.isArray(exit.topics);
+  const pickedTopics = topicsAnswered ? exit.topics : [];
   const topics = {};
   for (const [col, label] of TOPICS_OPTIONS) {
-    topics[col] = pickedTopics.includes(label) ? 1 : 0;
+    topics[col] = topicsAnswered ? (pickedTopics.includes(label) ? 1 : 0) : "";
   }
-  const topicsCount = pickedTopics.length;
+  const topicsCount = topicsAnswered ? pickedTopics.length : "";
   const topicsOtherText = pickedTopics.includes("Others")
     ? String(exit.topicsOtherText || "").slice(0, 120)
     : "";
@@ -195,22 +213,35 @@ export default async (req) => {
   // (mirrors how scenario picks are index-aligned on the frontend). Anything
   // missing or malformed just comes through as 0/blank rather than failing the
   // whole submission -- this is a bonus KPI block, not core quiz data.
-  const factsCorrectArr = Array.isArray(body.factsCorrect) ? body.factsCorrect : [];
+  // v2: no factsCorrect array = the facts quiz hasn't been done yet -> blanks, not zeros.
+  const factsAnswered = Array.isArray(body.factsCorrect);
+  const factsCorrectArr = factsAnswered ? body.factsCorrect : [];
   const facts = {};
   FACTS_QUESTION_KEYS.forEach((key, i) => {
-    facts[key + "_correct"] = factsCorrectArr[i] ? 1 : 0;
+    facts[key + "_correct"] = factsAnswered ? (factsCorrectArr[i] ? 1 : 0) : "";
   });
-  const factsScore = Number.isFinite(body.factsScore)
-    ? body.factsScore
+  const factsScore = !factsAnswered ? ""
+    : Number.isFinite(body.factsScore) ? body.factsScore
     : factsCorrectArr.filter(Boolean).length;
-  const factsTotal = Number.isFinite(body.factsTotal)
-    ? body.factsTotal
+  const factsTotal = !factsAnswered ? ""
+    : Number.isFinite(body.factsTotal) ? body.factsTotal
     : FACTS_QUESTION_KEYS.length;
+
+  // v2 fields
+  const stage = STAGES.includes(body.stage) ? body.stage : "shared"; // old clients = one final save
+  const location = LOCATION_LABELS[body.location] || "";
+  const sourceTag = String(body.sourceTag || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40);
+  const startedAtMs = Date.parse(body.startedAt);
+  const startedAt = Number.isFinite(startedAtMs) ? new Date(startedAtMs).toISOString() : "";
 
   // Whitelisted output only -- nothing from `body` is forwarded unfiltered.
   const clean = {
     responseId: String(body.responseId).slice(0, 100),
-    submittedAt: new Date().toISOString(),
+    stage,
+    startedAt,
+    submittedAt: new Date().toISOString(),   // = last updated, once the flow updates rows in place
+    location,
+    sourceTag,
     supporterStyle: String(body.supporterStyle || "").slice(0, 60),
     strongest: String(body.strongest || "").slice(0, 1),
     lowestDimension: String(body.lowestDimension || "").slice(0, 1),
@@ -251,5 +282,5 @@ export default async (req) => {
     return json({ error: "Upstream error" }, 502);
   }
 
-  return json({ ok: true });
+  return json({ ok: true, stage });
 };
