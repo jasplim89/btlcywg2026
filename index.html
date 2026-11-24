@@ -396,6 +396,12 @@ textarea:focus{outline:none;border-color:var(--teal)}
   padding:24px 22px;text-align:center;box-shadow:0 6px 0 rgba(6,62,69,.18);
   font-family:'Baloo 2',sans-serif;font-weight:800;font-size:clamp(1.45rem,4.6vw,1.9rem);line-height:1.2;
 }
+.autosave-note{
+  margin:18px 0 6px;background:var(--paper);border:2px solid var(--aqua);border-radius:14px;padding:14px 16px;font-size:.97rem;
+}
+.autosave-note p{margin:0}
+.autosave-note .linkish{font:inherit;font-weight:800;color:var(--teal-deep);background:none;text-decoration:underline;padding:0;margin-top:8px}
+.autosave-note.off{border-style:dashed;background:#fff}
 .results-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
 </style>
 </head>
@@ -428,7 +434,7 @@ textarea:focus{outline:none;border-color:var(--teal)}
   </div>
 </section>
 
-<!-- ============ CHECK-IN (v2: age, location and consent up front, so answers can be saved as you go) ============ -->
+<!-- ============ CHECK-IN (v3: age + location up front; answers saved anonymously by default, with an opt-out) ============ -->
 <section id="checkin" class="view">
   <div class="topbar">
     <div class="wrap">
@@ -457,10 +463,11 @@ textarea:focus{outline:none;border-color:var(--teal)}
           </div>
         </div>
 
-        <label class="check-row">
-          <input type="checkbox" id="consent">
-          <span>Save my answers for the Beyond the Label programme team, as set out in the data protection notice below. <em>Optional: the quiz works either way.</em></span>
-        </label>
+        <!-- v3: no tick box. Anonymous answers are saved by default; one tap opts out. -->
+        <div class="autosave-note" id="autosaveNote">
+          <p id="autosaveText">🔒 Your answers are saved anonymously to help improve the programme. We only get your name if you choose to share it at the end.</p>
+          <button type="button" class="linkish" id="optOutBtn" onclick="toggleOptOut()">Don't save my answers</button>
+        </div>
         <div class="pdpa-slot"></div>
 
         <p class="hint" id="checkinHint" role="status"></p>
@@ -633,25 +640,12 @@ textarea:focus{outline:none;border-color:var(--teal)}
         <strong>A gentle note:</strong> a lower result doesn't make you a bad friend. Holding space is a skill. Retake this in a couple of months and compare with <em>yourself</em>.
       </div>
 
-      <!-- v2: if they consented at check-in, results are already saved; this card only adds optional follow-up.
-           If they didn't, this is where they can still choose to share (old flow). -->
+      <!-- v3: anonymous answers are already saved (unless they opted out). This card is for the optional,
+           identifying details (name, contact, workshop interest), which need their own consent tick.
+           If they opted out at the start, they can still choose to share everything here. -->
       <div class="share-card" id="shareCard">
         <h3 style="font-size:1.15rem" id="shareTitle"></h3>
         <p style="font-size:.97rem;margin-top:6px" id="shareLead"></p>
-
-        <div id="shareConsentWrap" hidden>
-          <div class="form-grid" style="grid-template-columns:1fr">
-            <div>
-              <label for="shareAge" class="fld-label">Your age</label>
-              <input type="number" id="shareAge" min="13" max="25" inputmode="numeric" placeholder="13–25">
-            </div>
-          </div>
-          <label class="check-row">
-            <input type="checkbox" id="shareConsent">
-            <span>I consent to Beyond the Label collecting and using my answers and the details I give here, as set out in the data protection notice below.</span>
-          </label>
-          <div class="pdpa-slot"></div>
-        </div>
 
         <div class="form-grid" style="grid-template-columns:1fr">
           <div>
@@ -668,6 +662,12 @@ textarea:focus{outline:none;border-color:var(--teal)}
           <label for="userContact" class="fld-label">How can the team reach you? <span class="opt-tag">optional</span></label>
           <input type="text" id="userContact" maxlength="120" placeholder="Email">
         </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="shareConsent">
+          <span id="shareConsentText"></span>
+        </label>
+        <div class="pdpa-slot"></div>
 
         <div class="results-actions">
           <button class="btn" id="shareBtn" onclick="shareExtras()">Send</button>
@@ -690,13 +690,13 @@ textarea:focus{outline:none;border-color:var(--teal)}
   <details class="pdpa">
     <summary>📄 Data protection notice (Personal Data Protection Act 2012)</summary>
     <div class="pdpa-body">
-      <p><strong>What we collect:</strong> your four dimension scores, your supporter style, your answers to the 7 quick questions, your facts-quiz score, your age, where you're taking the quiz (e.g. school, youth agency, online, and the activation code in your link if there is one), and — only if you choose to provide them — your name, contact details, and your interest in learning about self-support resources. We also record the date and time. We do <em>not</em> collect your answers to individual scenario questions or anything you wrote in your personal reflection.</p>
-      <p><strong>When we save it:</strong> only if you tick the consent box. From then on, your answers are saved as you go (after the scenario questions, when your results appear, and if you send the optional details), so nothing is lost if you stop early. If you don't tick the box, nothing is saved.</p>
-      <p><strong>Purposes:</strong> (1) to evaluate and improve the peer support programme, using scores in aggregated form; and (2) if you indicated interest, to contact you with information and resources on supporting your own wellbeing.</p>
+      <p><strong>What we collect:</strong> saved automatically, <em>without your name</em>: your four dimension scores, your supporter style, your answers to the 7 quick questions, your facts-quiz score, your age, where you're taking the quiz (e.g. school, youth agency, online, and the activation code in your link if there is one), and the date and time. Only if you choose to give them at the end, and tick the box there: your name, contact details, and your interest in workshops. We do <em>not</em> collect your answers to individual scenario questions or anything you wrote in your personal reflection.</p>
+      <p><strong>When we save it:</strong> your anonymous answers are saved when your results appear. If you'd rather they weren't, tap <em>Don't save my answers</em> before you start — the quiz works exactly the same. Your name and contact details are only saved if you tick the box on the results page.</p>
+      <p><strong>Purposes:</strong> (1) to evaluate and improve the peer support programme, using answers and scores in aggregated form; and (2) if you indicated interest, to contact you about workshops that can help you grow in holding space with others.</p>
       <p><strong>Storage &amp; access:</strong> your data is stored securely within our organisation's Microsoft 365 environment and is accessible only to the programme team. It will not be sold, and will not be disclosed to third parties except as required by law. It will be retained only for as long as needed for the above purposes, and no longer than 2 years, after which it is deleted.</p>
       <p><strong>Your rights:</strong> providing personal data is voluntary. You may withdraw your consent, or request access to or correction of your data, at any time by contacting our Data Protection Officer at <a href="mailto:tcs.touch.org.sg">tcs.touch.org.sg</a> Read the [TOUCH Community Services Privacy Policy](https://www.touch.org.sg/privacy-policy.html)
 . Withdrawing consent will not affect your participation in the programme in any way.</p>
-      <p><strong>If you are under 18:</strong> please make sure you understand this notice before consenting — feel free to ask a facilitator, parent, or guardian to go through it with you first.</p>
+      <p><strong>If you are under 18:</strong> please make sure you understand this notice before you continue or share your details — feel free to ask a facilitator, parent, or guardian to go through it with you first.</p>
     </div>
   </details>
 </template>
@@ -923,8 +923,9 @@ let factsPicks = new Array(FACTS_QUESTIONS.length).fill(null); // chosen option 
 let sessionId = newId();
 let startedAt = new Date().toISOString();
 
-let consented = false;      // ticked at check-in (or later on the results page)
-let userAge   = null;       // 13-25, set at check-in or on the results page
+let saveAnswers    = true;  // v3: anonymous answers are saved by default; false = opted out at check-in
+let detailsConsent = false; // v3: ticked on the results page -> name/contact/interest may be sent
+let userAge   = null;       // 13-25, required at check-in
 let quizLoc   = '';         // 'school' | 'agency' | 'online' | 'other'
 let locFromLink = false;   // true when the QR link set it (question is skipped)
 let sourceTag = '';         // free activation code from the link, e.g. 'abc-sec-2026-01'
@@ -987,6 +988,7 @@ function showCheckin(){
   if(fixed) document.getElementById('locFixed').textContent = LOCATIONS[quizLoc];
   else renderLocChips();
   document.getElementById('checkinHint').textContent = '';
+  renderAutosaveNote();
   show('checkin');
 }
 
@@ -1008,22 +1010,30 @@ function renderLocChips(){
   }
 }
 
+/* v3: one tap to opt out of the anonymous autosave (and one tap to undo). */
+function toggleOptOut(){
+  saveAnswers = !saveAnswers;
+  renderAutosaveNote();
+}
+function renderAutosaveNote(){
+  document.getElementById('autosaveNote').classList.toggle('off', !saveAnswers);
+  document.getElementById('autosaveText').textContent = saveAnswers
+    ? '\u{1F512} Your answers are saved anonymously to help improve the programme. We only get your name if you choose to share it at the end.'
+    : 'Okay \u2014 your answers won\u2019t be saved. The quiz works exactly the same.';
+  document.getElementById('optOutBtn').textContent = saveAnswers ? 'Don\u2019t save my answers' : 'Save my answers after all';
+}
+
 function checkinNext(){
   const hint = document.getElementById('checkinHint');
   hint.className = 'hint err';
-  const wantsSave = document.getElementById('consent').checked;
-  const ageRaw = document.getElementById('userAge').value.trim();
-  const age = parseInt(ageRaw, 10);
+  const age = parseInt(document.getElementById('userAge').value.trim(), 10);
   const ageOk = age >= 13 && age <= 25;
 
-  // Location is one tap (or set by the QR link), so it's asked of everyone: if they choose to share
-  // later on the results page, it's already there. Age is only required if we're saving.
+  // v3: age and location are required for everyone (the autosave needs both, and the quiz is for 13-25).
+  if(!ageOk){ hint.textContent = 'Please enter your age (13–25).'; return; }
   if(!quizLoc){ hint.textContent = 'Please pick where you’re doing this.'; return; }
-  if(wantsSave && !ageOk){ hint.textContent = 'Please enter your age (13–25) so we can save your answers.'; return; }
-  if(ageRaw && !ageOk){ hint.textContent = 'This quiz is for ages 13–25.'; return; }
 
-  consented = wantsSave;
-  userAge   = ageOk ? age : null;
+  userAge = age;
   hint.textContent = '';
   showFacts();
 }
@@ -1096,8 +1106,6 @@ function renderP1(){
 function p1Next(){
   if(!picks[qi]) return;
   if(qi < SCENARIOS.length-1){ qi++; renderP1(); return; }
-  // v2 save point 1: all 8 scenarios answered -> scores exist. Saved now in case they stop here.
-  saveProgress('scores');
   setProgress('p2bar','p2count', PART2_STEP);
   show('part2');
 }
@@ -1198,7 +1206,7 @@ function showResults(){
 
   renderShareCard();
   show('results');
-  // v2 save point 2: everything answered. Saved automatically if they consented at check-in.
+  // v3: the one automatic save, when results appear (anonymous; skipped if they opted out).
   saveProgress('complete');
 }
 
@@ -1378,39 +1386,47 @@ function computeFactsResults(){
   return { correctArr, perKpi, score: correctArr.reduce((a,b)=>a+b,0), total: FACTS_QUESTIONS.length };
 }
 
-/* ================= SHARE CARD (results page) ================= */
+/* ================= SHARE CARD (results page) =================
+   v3: anonymous answers are already saved (unless they opted out). Name, contact and workshop
+   interest identify the person, so they need their own consent tick before they are sent. */
 function renderShareCard(){
   mountPdpa();
   const title = document.getElementById('shareTitle');
   const lead  = document.getElementById('shareLead');
   const btn   = document.getElementById('shareBtn');
-  document.getElementById('shareConsentWrap').hidden = consented;
-  if(consented){
-    title.textContent = 'Want a little support too?';
-    lead.innerHTML = 'Your results are already saved for the programme team. Anything below is <strong>optional</strong>.';
+  const ctext = document.getElementById('shareConsentText');
+  if(saveAnswers){
+    title.textContent = 'Want to keep growing?';
+    lead.innerHTML = 'Your answers are already saved anonymously. If you\u2019d like to hear about workshops, leave your details below. <strong>Optional.</strong>';
+    ctext.textContent = 'I agree to Beyond the Label keeping my name and contact details to contact me, as set out in the data protection notice below.';
     btn.textContent = 'Send';
   } else {
     title.textContent = 'Share your results with the programme team?';
-    lead.innerHTML = '<strong>Completely optional.</strong> We only get your four results, your quick-question answers and what you fill in here. Never your reflection or scenario answers.';
+    lead.innerHTML = 'You chose not to save your answers, and they haven\u2019t been. You can still share them now. <strong>Completely optional.</strong>';
+    ctext.textContent = 'I agree to Beyond the Label saving my answers and any details I give here, as set out in the data protection notice below.';
     btn.textContent = 'Share my results';
-    if(userAge) document.getElementById('shareAge').value = userAge;
   }
 }
 
 async function shareExtras(){
   const status = document.getElementById('shareStatus');
   status.className = 'status err';
+  const name     = document.getElementById('userName').value.trim();
+  const interest = document.getElementById('interest').checked;
+  const contact  = interest ? document.getElementById('userContact').value.trim() : '';
+  const ticked   = document.getElementById('shareConsent').checked;
 
-  if(!consented){
-    const age = parseInt(document.getElementById('shareAge').value, 10);
-    if(!(age >= 13 && age <= 25)){ status.textContent = 'Please enter your age (13–25) before sharing.'; return; }
-    if(!document.getElementById('shareConsent').checked){
-      status.textContent = 'Please read the data protection notice and tick the consent box first. Sharing is optional.';
-      return;
-    }
-    consented = true;
-    userAge = age;
+  if(saveAnswers && !name && !interest){
+    status.textContent = 'Nothing to send yet. Add your details above, or just skip this: your answers are already saved.';
+    return;
   }
+  if(!ticked){
+    status.textContent = 'Please read the data protection notice and tick the box first. This is optional.';
+    return;
+  }
+  detailsConsent = true;
+  const wasOptedOut = !saveAnswers;
+  saveAnswers = true;   // they've now chosen to share
 
   const btn = document.getElementById('shareBtn');
   btn.disabled = true; btn.textContent = 'Sending...';
@@ -1418,16 +1434,17 @@ async function shareExtras(){
 
   const ok = await saveProgress('shared');
   if(ok){
-    status.textContent = document.getElementById('interest').checked
-      ? '\u{1F499} Thank you! The team will follow up with self-support resources.'
-      : '\u{1F499} Thank you! Your results were shared with the programme team.';
+    status.textContent = interest
+      ? '\u{1F499} Thank you! The team will be in touch about workshops.'
+      : (wasOptedOut ? '\u{1F499} Thank you! Your results were shared with the programme team.'
+                     : '\u{1F499} Thank you! Your details were shared with the programme team.');
     status.className = 'status ok';
-    btn.textContent = 'Sent ✓';
-    document.getElementById('shareConsentWrap').hidden = true;
+    btn.textContent = 'Sent \u2713';
   } else {
-    status.textContent = 'Hmm, that didn’t go through. Your results are still yours. Try again, or just skip this.';
+    status.textContent = 'Hmm, that didn\u2019t go through. Try again, or just skip this.';
     status.className = 'status err';
     btn.disabled = false; btn.textContent = 'Try again';
+    if(wasOptedOut){ saveAnswers = false; }
   }
 }
 
@@ -1435,12 +1452,11 @@ function toggleContact(){
   document.getElementById('contactWrap').hidden = !document.getElementById('interest').checked;
 }
 
-/* ================= SAVING (v2: progressive, only with consent) =================
-   The same row (same responseId) is saved up to three times, each time with everything so far:
-     'scores'   after the 8 scenarios   -> scores, age, location
-     'complete' when results appear     -> + 7 quick questions + facts quiz
-     'shared'   optional extras sent    -> + name, contact, interest in support
-   The Power Automate flow updates the existing row by responseId (or adds it if new). */
+/* ================= SAVING (v3: anonymous by default, opt-out at check-in) =================
+     'complete' when results appear      -> scores, 7 quick questions, facts quiz, age, location (no name)
+     'shared'   only if they tick the box -> + name, contact, workshop interest
+   Both carry the same responseId. If the flow only adds rows, someone who sends details has 2 rows;
+   keep the newest per responseId. If the flow updates by responseId, it stays one row. */
 function buildPayload(stage){
   const scores = computeScores();
   const { lowest, highest } = extremes(scores);
@@ -1457,10 +1473,11 @@ function buildPayload(stage){
     scoreA: scores.A, scoreB: scores.B, scoreC: scores.C, scoreD: scores.D,
     exit: stage === 'scores' ? {} : exitData,
     age: userAge,
-    name: document.getElementById('userName').value.trim(),          // optional
-    interestedInSupport: document.getElementById('interest').checked,
-    contact: document.getElementById('interest').checked
-      ? document.getElementById('userContact').value.trim() : '',    // optional
+    // v3: identifying details only with the results-page consent tick
+    name: detailsConsent ? document.getElementById('userName').value.trim() : '',
+    interestedInSupport: detailsConsent && document.getElementById('interest').checked,
+    contact: detailsConsent && document.getElementById('interest').checked
+      ? document.getElementById('userContact').value.trim() : '',
     // Deliberately NOT sent: per-question answers, scenario picks, the private reflection.
   };
   if(factsDone){
@@ -1476,9 +1493,9 @@ function setSaveStatus(state){
   const el = document.getElementById('saveStatus');
   if(!el) return;
   el.className = 'save-status' + (state==='err' ? ' err' : '');
-  if(!consented){ el.textContent = ''; return; }
+  if(!saveAnswers){ el.textContent = ''; return; }
   if(state==='saving') el.textContent = 'Saving your results…';
-  else if(state==='ok') el.textContent = '✓ Saved for the programme team';
+  else if(state==='ok') el.textContent = '✓ Saved anonymously for the programme team';
   else if(state==='err'){
     el.innerHTML = 'Couldn’t save just now. <button type="button" onclick="saveProgress(\'complete\')">Try again</button>';
   }
@@ -1486,7 +1503,7 @@ function setSaveStatus(state){
 
 /* Queues a save so they go out in order, one at a time. Resolves true/false. Never throws. */
 function saveProgress(stage){
-  if(!consented || !userAge) return Promise.resolve(false);
+  if(!saveAnswers || !userAge) return Promise.resolve(false);
   const id = sessionId;
   const run = saveChain.then(async ()=>{
     if(id !== sessionId) return false;              // a retake started; drop stale saves
@@ -1522,14 +1539,15 @@ function retake(){
   factsDone = false;
   sessionId = newId();
   startedAt = new Date().toISOString();
-  consented = false;
-  // Keep age and location prefilled for a quick retake; consent is asked again.
-  ['p2reflectInput','userName','userContact','shareAge'].forEach(id=>{
+  saveAnswers = true;
+  detailsConsent = false;
+  // Keep age and location prefilled for a quick retake.
+  ['p2reflectInput','userName','userContact'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('shareStatus').textContent='';
   document.getElementById('saveStatus').textContent='';
-  ['consent','shareConsent','interest'].forEach(id=>{ document.getElementById(id).checked=false; });
+  ['shareConsent','interest'].forEach(id=>{ document.getElementById(id).checked=false; });
   const btn = document.getElementById('shareBtn');
   btn.disabled = false;
   toggleContact();
